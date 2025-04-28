@@ -1,4 +1,10 @@
 pandas==2.2.2
 numpy==2.0.2
 scikit-learn==1.6.1
+psutil==5.9.5
+GPUtil==1.4.0
+motor==3.5.3
+pymongo==4.5.0
+python-dotenv==1.0.0
+uptime==3.0.1
 
