@@ -20,11 +20,11 @@ except Exception as e:
     sys.exit(1)
 
 # Variables for dynamic enhancement
-actual_value = None  # in seconds
+actual_value = None
 next_snapshot_time = None
 monitor_process = None
 last_snapshot_time = None
-cooldown_period = timedelta(seconds=300)  # 5 minutes in seconds (minimum time between snapshots)
+cooldown_period = timedelta(minutes=5)  # Minimum time between snapshots
 
 def capture_system_metrics():
     """Capture system metrics with exactly the features the model expects."""
@@ -94,45 +94,43 @@ def predict_system_performance():
         
         # Check cooldown period
         if last_snapshot_time and (current_time - last_snapshot_time) < cooldown_period:
-            remaining_cooldown = (last_snapshot_time + cooldown_period - current_time).total_seconds()
-            logger.info(f"In cooldown period. Next snapshot available in: {remaining_cooldown:.1f} seconds")
+            logger.info(f"In cooldown period. Next snapshot available after: {last_snapshot_time + cooldown_period}")
             return
 
         input_df = capture_system_metrics()
         
-        # Make prediction (model outputs minutes, we convert to seconds)
+        # Make prediction
         prediction = model.predict(input_df)
-        predicted_minutes = prediction[0]
-        predicted_seconds = predicted_minutes * 60  # Convert to seconds
-        logger.info(f"Predicted snapshot interval: {predicted_minutes:.2f} minutes ({predicted_seconds:.0f} seconds)")
+        predicted_value = prediction[0]
+        logger.info(f"Predicted snapshot interval: {predicted_value:.2f} minutes")
 
         # Initialize or update schedule
         if actual_value is None:
-            actual_value = predicted_seconds
-            next_snapshot_time = current_time + timedelta(seconds=actual_value)
+            actual_value = predicted_value
+            next_snapshot_time = current_time + timedelta(minutes=actual_value)
             logger.info(f"Initial snapshot scheduled at: {next_snapshot_time}")
         else:
             # Only update if prediction is significantly better (20% improvement)
-            if predicted_seconds < actual_value * 0.8:
-                time_remaining = (next_snapshot_time - current_time).total_seconds()
+            if predicted_value < actual_value * 0.8:
+                time_remaining = (next_snapshot_time - current_time).total_seconds() / 60
                 
-                if time_remaining > max(300, predicted_seconds * 0.2):  # At least 5 minutes or 20% of new interval
-                    actual_value = predicted_seconds
-                    next_snapshot_time = current_time + timedelta(seconds=actual_value)
+                if time_remaining > max(5, predicted_value * 0.2):
+                    actual_value = predicted_value
+                    next_snapshot_time = current_time + timedelta(minutes=actual_value)
                     logger.info(f"Updated snapshot schedule to: {next_snapshot_time}")
                 else:
                     logger.info("Maintaining current schedule (too close to snapshot time)")
             else:
-                logger.info(f"Prediction {predicted_seconds:.0f}s not better than current {actual_value:.0f}s")
+                logger.info(f"Prediction {predicted_value:.2f} not better than current {actual_value:.2f}")
 
         # Check if it's time to take a snapshot
         if current_time >= next_snapshot_time:
             if take_system_snapshot():
                 last_snapshot_time = current_time
                 # Schedule next snapshot using current prediction
-                actual_value = predicted_seconds
-                next_snapshot_time = current_time + timedelta(seconds=actual_value)
-                logger.info(f"Snapshot successful. Next scheduled in: {actual_value:.0f} seconds")
+                actual_value = predicted_value
+                next_snapshot_time = current_time + timedelta(minutes=actual_value)
+                logger.info(f"Snapshot successful. Next scheduled at: {next_snapshot_time}")
 
     except Exception as e:
         logger.error(f"Error in prediction cycle: {e}")
