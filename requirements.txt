@@ -1,14 +1,15 @@
-pandas==2.2.2
-numpy==2.0.2
+pandas>=2.0.0
+numpy>=2.0.0
 scikit-learn==1.6.1
-psutil==5.9.5
-GPUtil==1.4.0
-motor==3.5.3
-pymongo==4.5.0
-python-dotenv==1.0.0
-uptime==3.0.1
-streamlit==1.28.0
-plotly==5.18.0
-pytz==2023.3.post1
+psutil
+GPUtil
+motor
+pymongo
+python-dotenv
+uptime
+streamlit
+plotly
+pytz
 joblib==1.4.2
+setuptools
 
